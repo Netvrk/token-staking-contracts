@@ -2,7 +2,7 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 import MerkleTree from "merkletreejs";
-import { keccak256, parseEther } from "viem";
+import { formatEther, keccak256, parseEther } from "viem";
 
 describe("Staking", function () {
   let staking: any;
@@ -79,6 +79,7 @@ describe("Staking", function () {
       await staking.write.stake([6, parseEther("1"), hexProof]);
       const userStake = await staking.read.getUserStake([owner.account.address, 6, 0]);
       expect(userStake.staked).to.be.equal(parseEther("1"));
+
     });
 
     it("6 months [1]: Stake token", async function () {
@@ -103,6 +104,7 @@ describe("Staking", function () {
 
       // check total users: should be 1
       expect(Number(program.totalUsers)).to.be.equal(1);
+
     });
 
     it("9 months: Stake token", async function () {
@@ -118,9 +120,12 @@ describe("Staking", function () {
       // check total staked amount
       const program = await staking.read.getStakingProgram([9]);
       expect(program.totalStaked).to.be.equal(parseEther("1"));
+
+
     });
 
     it("Calculate intermediate rewards", async function () {
+      await showStakedAmount(owner.account.address);
       await time.increase(86400);
       const stake = await staking.read.getUserStake([owner.account.address, 6, 0]);
       const reward = await staking.read.getPendingRewards([owner.account.address, 6, 0]);
@@ -164,6 +169,7 @@ describe("Staking", function () {
 
       const program = await staking.read.getStakingProgram([6]);
       expect(program.pendingRewards).to.be.equal(0n);
+      await showStakedAmount(owner.account.address);
     });
 
     it("9 months [0]: Claim reward", async function () {
@@ -179,6 +185,31 @@ describe("Staking", function () {
       const program = await staking.read.getStakingProgram([9]);
       expect(program.pendingRewards).to.be.equal(0n);
       expect(program.claimedRewards).to.be.equal(userStake0.reward);
+
+      await showStakedAmount(owner.account.address);
     });
   });
+
+
+  async function showStakedAmount(user: any) {
+
+    const xTokenBalance = await staking.read.balanceOf([user]);
+    console.log("XToken Balance: ", formatEther(xTokenBalance));
+
+    const programs = await staking.read.getStakingProgramIds();
+
+    for (const prgm of programs) {
+      const stakes = await staking.read.getUserStakes([user, prgm]);
+      if (stakes.length > 0) {
+        console.log("Staking Program:", prgm);
+      }
+
+      const stakeEndTime = await staking.read.getStakesEndTimesAndRemainingTimes([user, prgm]);
+
+      for (let i = 0; i < stakes.length; i++) {
+        const stake = stakes[i];
+        console.log("Staked Amount:", formatEther(stake.staked), "Reward:", formatEther(stake.reward), "Claimed:", formatEther(stake.claimed), "Stake End Remaining:", stakeEndTime[i].remainingTime / 86400n);
+      }
+    }
+  }
 });

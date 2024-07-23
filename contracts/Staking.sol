@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "hardhat/console.sol";
 
@@ -23,7 +24,7 @@ error INVALID_MERKLE_ROOT();
 error INVALID_MERKLE_PROOF();
 error MERKLE_ROOT_NOT_SET();
 
-contract Staking is AccessControl, ReentrancyGuard {
+contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     using MerkleProof for bytes32[];
 
     struct UserStake {
@@ -32,6 +33,11 @@ contract Staking is AccessControl, ReentrancyGuard {
         uint256 reward;
         uint256 claimed;
         uint256 claimedAt;
+    }
+
+    struct StakeEndTimeAndRemainingTime {
+        uint256 endTime;
+        uint256 remainingTime;
     }
 
     struct StakingProgram {
@@ -81,7 +87,11 @@ contract Staking is AccessControl, ReentrancyGuard {
     // Admin Functions 
     ///////////////////////////////////////////////////
     */
-    constructor(address _initialOwner, address _token, bytes32 _merkleRoot) {
+    constructor(
+        address _initialOwner,
+        address _token,
+        bytes32 _merkleRoot
+    ) ERC20("StakingToken", "sTKN") {
         _grantRole(DEFAULT_ADMIN_ROLE, _initialOwner);
         stakingPrograms[6] = StakingProgram({
             minStaking: 0.1 ether,
@@ -247,6 +257,9 @@ contract Staking is AccessControl, ReentrancyGuard {
         // Transfer tokens to contract
         stakingToken.transferFrom(_user, address(this), _amount);
 
+        // Mint staking tokens to user
+        _mint(msg.sender, _amount + userReward);
+
         // emit Stake event
         emit Stake(_user, _programID, stakeID, _amount);
 
@@ -313,6 +326,9 @@ contract Staking is AccessControl, ReentrancyGuard {
             .reward + userStakes[_user][_programID][_stakeID].staked;
 
         stakingToken.transfer(_user, claimableAmount);
+
+        // Burn staking token
+        _burn(msg.sender, claimableAmount);
 
         // emit Claim event
         emit Claim(_user, _programID, _stakeID, claimableAmount);
@@ -385,5 +401,25 @@ contract Staking is AccessControl, ReentrancyGuard {
     // Get stake program ids
     function getStakingProgramIds() external view returns (uint256[] memory) {
         return stakingProgramIds;
+    }
+
+    function getStakesEndTimesAndRemainingTimes(
+        address _user,
+        uint256 _programID
+    ) external view returns (StakeEndTimeAndRemainingTime[] memory stakesInfo) {
+        UserStake[] memory stakes = userStakes[_user][_programID];
+        stakesInfo = new StakeEndTimeAndRemainingTime[](stakes.length);
+
+        for (uint256 i = 0; i < stakes.length; i++) {
+            uint256 endTime = stakes[i].stakedAt +
+                stakingPrograms[_programID].duration;
+            uint256 remainingTime = (endTime > block.timestamp)
+                ? (endTime - block.timestamp)
+                : 0;
+            stakesInfo[i] = StakeEndTimeAndRemainingTime(
+                endTime,
+                remainingTime
+            );
+        }
     }
 }
