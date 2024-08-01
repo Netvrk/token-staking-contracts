@@ -124,6 +124,11 @@ describe("Staking", function () {
 
     });
 
+
+    it("Check transfer of synthetic token", async function () {
+      await expect(staking.write.transfer([user1.account.address, parseEther("0.5")])).to.be.revertedWithCustomError;
+    });
+
     it("Calculate intermediate rewards", async function () {
       await showStakedAmount(owner.account.address);
       await time.increase(86400);

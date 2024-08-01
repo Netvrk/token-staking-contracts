@@ -23,6 +23,7 @@ error ALREADY_CLAIMED();
 error INVALID_MERKLE_ROOT();
 error INVALID_MERKLE_PROOF();
 error MERKLE_ROOT_NOT_SET();
+error TOKEN_TRANSFER_DISABLED();
 
 contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     using MerkleProof for bytes32[];
@@ -332,6 +333,18 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
 
         // emit Claim event
         emit Claim(_user, _programID, _stakeID, claimableAmount);
+    }
+
+    // Override the _update function to disable token transfers
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual override {
+        if (!(from == address(0) || to == address(0))) {
+            revert TOKEN_TRANSFER_DISABLED();
+        }
+        super._update(from, to, value);
     }
 
     /**
