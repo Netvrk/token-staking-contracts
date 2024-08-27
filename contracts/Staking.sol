@@ -36,11 +36,6 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         uint256 claimedAt;
     }
 
-    struct StakeEndTimeAndRemainingTime {
-        uint256 endTime;
-        uint256 remainingTime;
-    }
-
     struct StakingProgram {
         uint256 duration;
         uint256 apyRate;
@@ -89,11 +84,10 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     ///////////////////////////////////////////////////
     */
     constructor(
-        address _initialOwner,
         address _token,
         bytes32 _merkleRoot
     ) ERC20("StakingToken", "sTKN") {
-        _grantRole(DEFAULT_ADMIN_ROLE, _initialOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         stakingPrograms[6] = StakingProgram({
             minStaking: 0.1 ether,
             maxStaking: 100 ether,
@@ -414,25 +408,5 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     // Get stake program ids
     function getStakingProgramIds() external view returns (uint256[] memory) {
         return stakingProgramIds;
-    }
-
-    function getStakesEndTimesAndRemainingTimes(
-        address _user,
-        uint256 _programID
-    ) external view returns (StakeEndTimeAndRemainingTime[] memory stakesInfo) {
-        UserStake[] memory stakes = userStakes[_user][_programID];
-        stakesInfo = new StakeEndTimeAndRemainingTime[](stakes.length);
-
-        for (uint256 i = 0; i < stakes.length; i++) {
-            uint256 endTime = stakes[i].stakedAt +
-                stakingPrograms[_programID].duration;
-            uint256 remainingTime = (endTime > block.timestamp)
-                ? (endTime - block.timestamp)
-                : 0;
-            stakesInfo[i] = StakeEndTimeAndRemainingTime(
-                endTime,
-                remainingTime
-            );
-        }
     }
 }

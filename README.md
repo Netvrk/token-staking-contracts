@@ -1,13 +1,4 @@
-# Sample Hardhat Project
+#### Test contracts in holesky
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
-```
+- **Token**: [0x9Ee1d6a13B1724803CF7EE60014E0cF9EC4b5052](https://holesky.etherscan.io/address/0x9Ee1d6a13B1724803CF7EE60014E0cF9EC4b5052)
+- **Staking**: [0xD98aCF2770B721E3d708B7E35a3AF91396af8f77](https://holesky.etherscan.io/address/0xD98aCF2770B721E3d708B7E35a3AF91396af8f77)
