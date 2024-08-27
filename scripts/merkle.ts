@@ -1,6 +1,6 @@
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import MerkleTree from "merkletreejs";
 import { keccak256 } from "viem";
-
 
 
 async function main() {
@@ -19,6 +19,23 @@ async function main() {
         console.log("User:", users[i]);
         console.log("Proof:", merkleProofs[i]);
     }
+
+    // after 5 mins
+    const now = (await time.latest()) + 86400 + 300;
+
+    console.log("Current Time:", now);
+
+    const after6months = now + 6 * 30 * 86400;
+    console.log("After 6 months:", after6months);
+    console.log("Days in 6 months:", 6 * 30);
+
+    const after9months = now + 9 * 30 * 86400;
+    console.log("After 9 months:", after9months);
+    console.log("Days in 9 months:", 9 * 30);
+
+    const after12months = now + 12 * 30 * 86400;
+    console.log("After 12 months:", after12months);
+    console.log("Days in 12 months:", 12 * 30);
 }
 
 
