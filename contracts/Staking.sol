@@ -90,6 +90,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         bytes32 _merkleRoot
     ) ERC20("StakingToken", "sTKN") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        stakingProgramIds.push(6);
         stakingToken = IERC20(_token);
         merkleRoot = _merkleRoot;
     }
@@ -109,10 +110,12 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         uint256 _apyRate,
         uint256 _minStaking,
         uint256 _maxStaking,
-        uint256 _start
+        uint256 _start,
+        uint256 _end
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (stakingPrograms[_programID].start != 0)
             revert STAKING_PROGRAM_ALREADY_EXISTS();
+
         if (_start < block.timestamp) revert STAKING_START_IN_PAST();
         if (_minStaking > _maxStaking) revert MIN_STAKING_GREATER_THAN_MAX();
 
@@ -120,7 +123,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
             minStaking: _minStaking,
             maxStaking: _maxStaking,
             start: _start,
-            end: _start + _durationDays * 1 days,
+            end: _end,
             staked: 0,
             totalStaked: 0,
             totalUsers: 0,
@@ -140,7 +143,8 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         uint256 _apyRate,
         uint256 _minStaking,
         uint256 _maxStaking,
-        uint256 _start
+        uint256 _start,
+        uint256 _end
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (stakingPrograms[_programID].start == 0)
             revert STAKING_PROGRAM_DOES_NOT_EXISTS();
@@ -153,7 +157,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         stakingPrograms[_programID].minStaking = _minStaking;
         stakingPrograms[_programID].maxStaking = _maxStaking;
         stakingPrograms[_programID].start = _start;
-        stakingPrograms[_programID].end = _start + _durationDays * 1 days;
+        stakingPrograms[_programID].end = _end;
     }
 
     // Update staking token
