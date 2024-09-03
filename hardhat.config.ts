@@ -1,7 +1,9 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import '@openzeppelin/hardhat-upgrades';
 import dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
+
 
 dotenv.config();
 

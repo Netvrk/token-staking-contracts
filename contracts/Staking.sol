@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 error MIN_STAKING_AMOUNT_EXCEEDED();
 error MAX_STAKING_AMOUNT_EXCEEDED();
@@ -27,8 +29,17 @@ error TOKEN_TRANSFER_DISABLED();
 error STAKING_START_IN_PAST();
 error MIN_STAKING_GREATER_THAN_MAX();
 
-contract Staking is AccessControl, ReentrancyGuard, ERC20 {
+contract Staking is
+    Initializable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ERC20Upgradeable
+{
     using MerkleProof for bytes32[];
+
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     struct UserStake {
         uint256 staked;
@@ -85,12 +96,21 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     // Admin Functions 
     ///////////////////////////////////////////////////
     */
-    constructor(
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address _token,
         bytes32 _merkleRoot
-    ) ERC20("StakingToken", "sTKN") {
+    ) public initializer {
+        __ERC20_init("StakingToken", "sTKN");
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        stakingProgramIds.push(6);
         stakingToken = IERC20(_token);
         merkleRoot = _merkleRoot;
     }
@@ -98,7 +118,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     // Update whitelisted users
     function updateMerkleRoot(
         bytes32 _merkleRoot
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         if (merkleRoot == _merkleRoot) revert INVALID_MERKLE_ROOT();
         merkleRoot = _merkleRoot;
     }
@@ -112,7 +132,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         uint256 _maxStaking,
         uint256 _start,
         uint256 _end
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         if (stakingPrograms[_programID].start != 0)
             revert STAKING_PROGRAM_ALREADY_EXISTS();
 
@@ -145,7 +165,7 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
         uint256 _maxStaking,
         uint256 _start,
         uint256 _end
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         if (stakingPrograms[_programID].start == 0)
             revert STAKING_PROGRAM_DOES_NOT_EXISTS();
 
@@ -163,12 +183,12 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     // Update staking token
     function updateStakingToken(
         address _token
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         stakingToken = IERC20(_token);
     }
 
     // Withdraw tokens from contract by owner
-    function withdrawStuckedFunds(
+    function withdrawFunds(
         address _token,
         address _treasury
     ) external virtual onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -403,4 +423,8 @@ contract Staking is AccessControl, ReentrancyGuard, ERC20 {
     function getStakingProgramIds() external view returns (uint256[] memory) {
         return stakingProgramIds;
     }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) {}
 }
