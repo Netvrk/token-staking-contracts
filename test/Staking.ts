@@ -36,20 +36,12 @@ describe("Staking", function () {
 
   describe("Deployment", async function () {
     it("Deploy token & staking token", async function () {
-      const root = "0x" + tree.getRoot().toString("hex");
       const tokenContract = await hre.ethers.getContractFactory("Token");
-
       token = await tokenContract.deploy();
-
       tokenAddress = await token.getAddress();
-
       const stakingContract = await hre.ethers.getContractFactory("Staking");
-      staking = await hre.upgrades.deployProxy(stakingContract, [tokenAddress, root]);
-
+      staking = await hre.upgrades.deployProxy(stakingContract, [tokenAddress, owner.account.address]);
       stakingAddress = await staking.getAddress();
-
-
-      await staking.grantRole(await staking.MANAGER_ROLE(), owner.account.address);
     });
 
     it("Approve token", async function () {
