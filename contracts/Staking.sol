@@ -2,9 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -19,7 +17,6 @@ error INVALID_STAKE_ID();
 error STAKING_PROGRAM_ALREADY_EXISTS();
 error STAKING_PROGRAM_DOES_NOT_EXISTS();
 error ZERO_BALANCE();
-error ZERO_STAKED();
 error STAKING_DURATION_NOT_COMPLETED();
 error ALREADY_CLAIMED();
 error INVALID_MERKLE_ROOT();
@@ -27,6 +24,7 @@ error INVALID_MERKLE_PROOF();
 error MERKLE_ROOT_NOT_SET();
 error TOKEN_TRANSFER_DISABLED();
 error STAKING_START_IN_PAST();
+error STAKING_END_BEFORE_START();
 error MIN_STAKING_GREATER_THAN_MAX();
 
 contract Staking is
@@ -118,7 +116,6 @@ contract Staking is
         bytes32 _merkleRoot
     ) external onlyRole(MANAGER_ROLE) {
         if (merkleRoot == _merkleRoot) revert INVALID_MERKLE_ROOT();
-        if (_merkleRoot == bytes32(0)) revert INVALID_MERKLE_ROOT();
         merkleRoot = _merkleRoot;
     }
 
@@ -145,6 +142,7 @@ contract Staking is
             revert STAKING_PROGRAM_ALREADY_EXISTS();
 
         if (_start < block.timestamp) revert STAKING_START_IN_PAST();
+        if (_start > _end) revert STAKING_END_BEFORE_START();
         if (_minStaking > _maxStaking) revert MIN_STAKING_GREATER_THAN_MAX();
 
         stakingPrograms[_programID] = StakingProgram({
@@ -187,6 +185,7 @@ contract Staking is
             revert STAKING_PROGRAM_DOES_NOT_EXISTS();
 
         if (_start < block.timestamp) revert STAKING_START_IN_PAST();
+        if (_start > _end) revert STAKING_END_BEFORE_START();
         if (_minStaking > _maxStaking) revert MIN_STAKING_GREATER_THAN_MAX();
 
         stakingPrograms[_programID].duration = _durationDays * 1 days;
@@ -339,9 +338,6 @@ contract Staking is
         if (userStakes[_user][_programID].length <= _stakeID)
             revert INVALID_STAKE_ID();
 
-        if (userStakes[_user][_programID][_stakeID].staked == 0)
-            revert ZERO_STAKED();
-
         if (userStakes[_user][_programID][_stakeID].claimed > 0)
             revert ALREADY_CLAIMED();
 
@@ -423,9 +419,12 @@ contract Staking is
         uint256 _programID,
         uint256 _stakeID
     ) external view returns (uint256 reward, uint256 duration) {
-        if (userStakes[_user][_programID][_stakeID].staked == 0)
-            revert ZERO_STAKED();
-
+        if (userStakes[_user][_programID].length <= _stakeID) {
+            return (0, 0);
+        }
+        if (userStakes[_user][_programID][_stakeID].claimed > 0) {
+            return (0, 0);
+        }
         uint256 stakedDuration = block.timestamp -
             userStakes[_user][_programID][_stakeID].stakedAt;
 
