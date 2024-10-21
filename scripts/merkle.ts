@@ -21,7 +21,7 @@ async function main() {
     }
 
     // after 5 mins
-    const now = (await time.latest()) + 86400 + 300;
+    const now = (await time.latest()) + 30 * 60;
 
     console.log("Current Time:", now);
 
