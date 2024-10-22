@@ -91,19 +91,25 @@ describe("RRStaking", function () {
         });
 
 
-        it("Unstake token", async function () {
+        it("Unstake token before lock period is over", async function () {
             await expect(rrStaking.unstake(ethers.parseEther("6"))).to.be.revertedWithCustomError(rrStaking, "INVALID_STAKED_AMOUNT");
+            await expect(rrStaking.unstake(ethers.parseEther("1"))).to.be.revertedWithCustomError(rrStaking, "STAKING_LOCK_PERIOD_NOT_OVER")
 
-            await rrStaking.unstake(ethers.parseEther("1"));
-            const userStake = await rrStaking.balanceOf(ownerAddress);
-            console.log("After UnStaking: ", ethers.formatEther(userStake) + "TKN");
-            expect(userStake).to.be.equal(ethers.parseEther("0"));
         });
 
         it("Staking ended", async function () {
             await time.increase(86400);
             await expect(rrStaking.stake(ethers.parseEther("1"))).to.be.revertedWithCustomError(rrStaking, "STAKING_ENDED");
         });
+
+        it("Unstake after 30 days", async function () {
+            await time.increase(86400 * 30);
+            await rrStaking.unstake(ethers.parseEther("1"));
+            const userStake = await rrStaking.balanceOf(ownerAddress);
+            console.log("After UnStaking: ", ethers.formatEther(userStake) + "TKN");
+            expect(userStake).to.be.equal(ethers.parseEther("0"));
+        }
+        );
     });
 
     describe("Extra", async function () {

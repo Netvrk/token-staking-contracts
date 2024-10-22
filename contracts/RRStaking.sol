@@ -18,6 +18,7 @@ error MIN_STAKING_AMOUNT_EXCEEDED();
 error MAX_STAKING_AMOUNT_EXCEEDED();
 error MIN_STAKING_GREATER_THAN_MAX();
 error INVALID_STAKED_AMOUNT();
+error STAKING_LOCK_PERIOD_NOT_OVER();
 
 contract RRStaking is
     Initializable,
@@ -41,6 +42,10 @@ contract RRStaking is
     IERC20 private stakingToken;
 
     StakingProgram private stakingProgram;
+
+    uint256 private lockPeriod;
+
+    mapping(address => uint256) private stakingTimestamps;
 
     event Stake(address indexed user, uint256 amount, uint256 stakedAt);
 
@@ -67,6 +72,18 @@ contract RRStaking is
             staked: 0,
             totalStaked: 0
         });
+
+        lockPeriod = 30 days; // Default lock period in days
+    }
+
+    /**
+     * @dev Set the lock period for the staked tokens.
+     * @param _lockPeriodInDays Lock period in days
+     */
+    function setLockPeriod(
+        uint256 _lockPeriodInDays
+    ) external onlyRole(MANAGER_ROLE) {
+        lockPeriod = _lockPeriodInDays * 1 days;
     }
 
     /**
@@ -111,9 +128,11 @@ contract RRStaking is
         stakingProgram.totalStaked += _amount;
         stakingProgram.staked += _amount;
 
-        _mint(msg.sender, _amount);
+        stakingTimestamps[msg.sender] = block.timestamp;
 
         stakingToken.transferFrom(msg.sender, address(this), _amount);
+
+        _mint(msg.sender, _amount);
 
         emit Stake(msg.sender, _amount, block.timestamp);
     }
@@ -123,7 +142,10 @@ contract RRStaking is
      * @param _amount Amount of tokens to unstake.
      */
     function unstake(uint256 _amount) external nonReentrant {
+        if (_amount <= 0) revert INVALID_STAKED_AMOUNT();
         if (balanceOf(msg.sender) < _amount) revert INVALID_STAKED_AMOUNT();
+        if (block.timestamp < stakingTimestamps[msg.sender] + lockPeriod)
+            revert STAKING_LOCK_PERIOD_NOT_OVER();
 
         stakingProgram.staked -= _amount;
 
