@@ -190,6 +190,15 @@ contract RRStaking is
     }
 
     /**
+     * @dev Returns the duration for which the user has staked the tokens.
+     * @param _user Address of the user.
+     * @return uint256 Duration for which the user has staked the tokens.
+     */
+    function getStakedDuration(address _user) external view returns (uint256) {
+        return block.timestamp - stakingTimestamps[_user];
+    }
+
+    /**
      * @dev Authorizes the upgrade of the contract.
      * @param newImplementation Address of the new implementation.
      */
