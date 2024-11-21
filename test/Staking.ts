@@ -4,7 +4,7 @@ import hre from "hardhat";
 import MerkleTree from "merkletreejs";
 import { keccak256, parseEther } from "viem";
 
-describe("Staking", function () {
+describe("Staking", () => {
   let staking: any;
   let token: any;
   let owner: any;
@@ -30,7 +30,7 @@ describe("Staking", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
-  before(async function () {
+  before(async () => {
     // Contracts are deployed using the first signer/account by default
 
     [owner, manager, user1, user2, user3, user4] = await hre.ethers.getSigners();
@@ -52,8 +52,8 @@ describe("Staking", function () {
     );
   });
 
-  describe("Deployment and updates", async function () {
-    it("Deploy token & staking token", async function () {
+  describe("Deployment and updates", async () => {
+    it("Deploy token & staking token", async () => {
       const tokenContract = await hre.ethers.getContractFactory("Token");
       token = await tokenContract.deploy();
       tokenAddress = await token.getAddress();
@@ -62,13 +62,13 @@ describe("Staking", function () {
       stakingAddress = await staking.getAddress();
     });
 
-    it("Approve token", async function () {
+    it("Approve token", async () => {
       await token.approve(stakingAddress, parseEther("10000"));
       // send tokens to contract
       await token.transfer(stakingAddress, parseEther("10000"));
     });
 
-    it("Update merkle root", async function () {
+    it("Update merkle root", async () => {
 
       tree = new MerkleTree(
         whiteListAddresses.map((x: any) => keccak256(x)),
@@ -81,7 +81,7 @@ describe("Staking", function () {
       await expect(staking.connect(manager).updateMerkleRoot(root)).to.be.revertedWithCustomError(staking, "INVALID_MERKLE_ROOT");
     });
 
-    it("Update staking token", async function () {
+    it("Update staking token", async () => {
       await expect(staking.updateStakingToken(tokenAddress)).to.be.reverted;
       await staking.connect(manager).updateStakingToken(tokenAddress);
 
@@ -93,13 +93,13 @@ describe("Staking", function () {
 
   });
 
-  describe("Staking and claiming", async function () {
+  describe("Staking and claiming", async () => {
 
     it("Check transfer of synthetic token", async function () {
       await expect(staking.transfer(user1Address, parseEther("0.5"))).to.be.revertedWithCustomError(staking, "TOKEN_TRANSFER_DISABLED");
     });
 
-    it("Add 6 & 9 months staking program", async function () {
+    it("Add 6 & 9 months staking program", async () => {
       const now = (await time.latest()) + 86400;
       const endTime = now + 86400;
 
@@ -117,7 +117,7 @@ describe("Staking", function () {
 
     });
 
-    it("Update staking program", async function () {
+    it("Update staking program", async () => {
       const now = (await time.latest()) + 86400;
 
       const endTime = now + 86400;
@@ -134,7 +134,7 @@ describe("Staking", function () {
     });
 
 
-    it("6 months [0]: Stake token", async function () {
+    it("6 months [0]: Stake token", async () => {
 
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
       await expect(staking.stake(6, parseEther("10"), hexProof)).to.be.revertedWithCustomError(staking, "STAKING_NOT_STARTED");
@@ -150,7 +150,7 @@ describe("Staking", function () {
 
     });
 
-    it("6 months [1]: Stake token", async function () {
+    it("6 months [1]: Stake token", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
 
       const alteredProof = [...hexProof];
@@ -180,7 +180,7 @@ describe("Staking", function () {
 
     });
 
-    it("9 months: Stake token", async function () {
+    it("9 months: Stake token", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
       // claim invalid stake id
       await expect(staking.claim(9, 0, hexProof)).to.be.revertedWithCustomError(staking, "INVALID_STAKE_ID");
@@ -192,19 +192,19 @@ describe("Staking", function () {
     });
 
 
-    it("Calculate intermediate rewards", async function () {
+    it("Calculate intermediate rewards", async () => {
       await time.increase(86400);
       const stake = await staking.getUserStake(ownerAddress, 6, 0);
       const reward = await staking.getPendingRewards(ownerAddress, 6, 0);
       expect(Number(reward[0])).to.be.lt(Number(stake.staked - stake.reward));
     });
 
-    it("Claim before end", async function () {
+    it("Claim before end", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
       await expect(staking.claim(6, 0, hexProof)).to.be.revertedWithCustomError;
     });
 
-    it("6 months: Stake after end", async function () {
+    it("6 months: Stake after end", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
 
       await time.increase(2 * 86400);
@@ -213,7 +213,7 @@ describe("Staking", function () {
     });
 
 
-    it("Check pending rewards", async function () {
+    it("Check pending rewards", async () => {
       const pendingReward = await staking.getPendingRewards(ownerAddress, 9, 0);
       expect(Number(pendingReward[0])).to.be.gt(0);
 
@@ -222,7 +222,7 @@ describe("Staking", function () {
     });
 
 
-    it("6 months [0]: Claim reward", async function () {
+    it("6 months [0]: Claim reward", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
       await expect(staking.claim(6, 0, hexProof)).to.be.revertedWithCustomError(staking, "STAKING_DURATION_NOT_COMPLETED");
 
@@ -250,7 +250,7 @@ describe("Staking", function () {
       expect(Number(pendingReward2[0])).to.be.equal(0);
     });
 
-    it("6 months [1]: Claim reward", async function () {
+    it("6 months [1]: Claim reward", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
       const pendingReward = await staking.getPendingRewards(ownerAddress, 6, 1);
 
@@ -263,7 +263,7 @@ describe("Staking", function () {
       expect(program.pendingRewards).to.be.equal(0n);
     });
 
-    it("9 months [0]: Claim reward", async function () {
+    it("9 months [0]: Claim reward", async () => {
       const hexProof = tree.getHexProof(keccak256(ownerAddress));
 
       await expect(staking.claim(9, 0, hexProof)).to.be.revertedWithCustomError(staking, "STAKING_DURATION_NOT_COMPLETED");
@@ -281,10 +281,9 @@ describe("Staking", function () {
     });
   });
 
-  describe("Withdraw", async function () {
+  describe("Withdraw", async () => {
 
-
-    it("Withdraw all tokens", async function () {
+    it("Withdraw all tokens", async () => {
 
       await expect(staking.connect(manager).withdrawFunds(tokenAddress, ownerAddress)).to.be.reverted;
       await staking.withdrawFunds(tokenAddress, ownerAddress);
