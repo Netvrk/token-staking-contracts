@@ -1,6 +1,6 @@
 ## Token Staking Contracts
 
-The **Token Staking Contracts** form the backbone of incentivizing user participation in the MineRunner ecosystem. These contracts allow users to stake tokens and earn rewards based on predefined conditions, promoting both engagement and long-term token holding. Below is a detailed explanation of the two types of staking contracts:
+The **Token Staking Contracts** form the backbone of incentivizing user participation in the Netvrk metaverse ecosystem. These contracts allow users to stake tokens and earn rewards based on predefined conditions, promoting both engagement and long-term token holding. Below is a detailed explanation of the two types of staking contracts:
 
 ---
 
