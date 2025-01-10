@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -195,6 +195,7 @@ contract RRStaking is
      * @return uint256 Duration for which the user has staked the tokens.
      */
     function getStakedDuration(address _user) external view returns (uint256) {
+        if (stakingTimestamps[_user] == 0) return 0;
         return block.timestamp - stakingTimestamps[_user];
     }
 
